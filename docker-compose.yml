@@ -1,0 +1,46 @@
+
+services:
+  db-postgres:
+    container_name: db-postgres
+    image: postgres:17
+    ports:
+      - "5432:5432"
+#    env_file:
+#      - path: backend/.env
+    environment:
+      DB_USER: user
+      POSTGRES_PASSWORD: user
+      DB_NAME: user
+      DB_HOST: db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    networks:
+      - vlru-app
+    restart: always
+
+  backend:
+    container_name: backend-nest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: backend/.env
+    depends_on:
+      - db-postgres
+    networks:
+      - vlru-app
+
+volumes:
+  postgres_data:
+
+networks:
+  vlru-app:
+    driver: bridge
+    name: app-vlru-net
