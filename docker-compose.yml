@@ -7,15 +7,18 @@ services:
       - "5432:5432"
 #    env_file:
 #      - path: backend/.env
+    env_file:
+      - ./backend/.env
     environment:
-      DB_USER: user
-      POSTGRES_PASSWORD: user
-      DB_NAME: user
-      DB_HOST: db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=user123456
+      - POSTGRES_DB=user
+      - POSTGRES_HOST=db-postgres
+      - POSTGRES_PORT=5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       retries: 5
       start_period: 5s
@@ -33,7 +36,8 @@ services:
     env_file:
       - path: backend/.env
     depends_on:
-      - db-postgres
+      db-postgres:
+        condition: service_healthy
     networks:
       - vlru-app
 
