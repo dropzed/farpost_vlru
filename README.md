@@ -25,9 +25,12 @@ The project supports multiple environments:
 ### Development Mode (Hot-Reload)
 
 ```bash
+cd ./backend
+
+npm install 
 
 # manually
-docker compose --env-file ./backend/.env.development -f docker-compose.yml up -d
+docker compose --env-file ./backend/.env.development -f docker-compose.yml up -d --build
 ```
 
 ### Production Mode
@@ -35,7 +38,7 @@ docker compose --env-file ./backend/.env.development -f docker-compose.yml up -d
 ```bash
 
 # manually
-docker compose --env-file ./backend/.env.production -f docker-compose.prod.yml up -d
+docker compose --env-file ./backend/.env.production -f docker-compose.prod.yml up -d --build
 ```
 
 ### Quick Commands
@@ -47,7 +50,7 @@ docker compose -f docker-compose.yml logs -f name of container
 
 # View logs (production)
 docker compose -f docker-compose.prod.yml logs -f name of container
-docker compose -f docker-compose.prod.yml logs -f db-name of container
+docker compose -f docker-compose.prod.yml logs -f name of container
 
 # Remove volumes (reset database)
 # Development:
