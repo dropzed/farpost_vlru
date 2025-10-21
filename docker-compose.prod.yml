@@ -1,0 +1,49 @@
+services:
+  db-postgres:
+    container_name: db-postgres-prod
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    networks:
+      - vlru-app-prod
+    restart: always
+
+  backend:
+    container_name: backend-nest-prod
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    networks:
+      - vlru-app-prod
+    restart: always
+
+volumes:
+  postgres_data_prod:
+
+networks:
+  vlru-app-prod:
+    driver: bridge
+    name: app-vlru-net-prod
