@@ -1,4 +1,25 @@
 .idea
 
+# Backend
 ./backend/dist
 ./backend/node_modules
+./backend/.env
+
+# Environment files (keep templates only)
+#.env
+#!.env.example
+#*.env.local
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+musor
