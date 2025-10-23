@@ -6,6 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "generate:entities": "npx typeorm-model-generator -h localhost -d user -u user -x user123456 -p 5432 -e postgres -o ./src/entities -s public --ssl false",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -52,6 +53,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "typeorm-model-generator": "^0.4.6",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },

@@ -1,7 +1,9 @@
 services:
   db-postgres:
     container_name: db-postgres-prod
-    image: postgres:17
+    build:
+      context: ./backups
+      dockerfile: Dockerfile
     ports:
       - "5432:5432"
     env_file:
@@ -10,16 +12,25 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - BACKUP_INTERVAL=43200  # 12 часов для продакшена
+      - KEEP_BACKUPS=30  # Храним 30 бэкапов для продакшена (15 дней)
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
+      - ./backups/prod:/host-backup:rw
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
+      interval: 30s
       retries: 5
-      start_period: 5s
+      start_period: 30s
+      timeout: 10s
     networks:
       - vlru-app-prod
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     container_name: backend-nest-prod

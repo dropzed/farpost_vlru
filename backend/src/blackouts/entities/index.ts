@@ -1,0 +1,10 @@
+export { City } from './city.entity';
+export { District } from './district.entity';
+export { FolkDistrict } from './folk-district.entity';
+export { BigFolkDistrict } from './big-folk-district.entity';
+export { Street } from './street.entity';
+export { Building } from './building.entity';
+export { Blackout } from './blackout.entity';
+export { BlackoutBuilding } from './blackout-building.entity';
+export { Complaint } from './complaint.entity';
+export { ComplaintInMinute } from './complaint-in-minute.entity';

@@ -25,3 +25,8 @@ musor
 
 # Аналитика
 ruslan/Templates/*.sav
+
+# Backups
+#backups/
+#*.sql
+#*.sql.gz

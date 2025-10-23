@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import {getTypeOrmConfig} from "./config/typeorm.config";
+import { BlackoutsModule } from './blackouts/blackouts.module';
 
 
 @Module({
@@ -19,6 +20,7 @@ import {getTypeOrmConfig} from "./config/typeorm.config";
           useFactory: getTypeOrmConfig,
           inject: [ConfigService],
       }),
+      BlackoutsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
