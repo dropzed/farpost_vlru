@@ -5,6 +5,7 @@ import {TypeOrmModule} from "@nestjs/typeorm";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import {getTypeOrmConfig} from "./config/typeorm.config";
 import { BlackoutsModule } from './blackouts/blackouts.module';
+import { CountBlackoutsModule } from './count_blackouts/count_blackouts.module';
 
 
 @Module({
@@ -21,6 +22,7 @@ import { BlackoutsModule } from './blackouts/blackouts.module';
           inject: [ConfigService],
       }),
       BlackoutsModule,
+      CountBlackoutsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

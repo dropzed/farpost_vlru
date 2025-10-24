@@ -13,7 +13,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - BACKUP_INTERVAL=43200  # 12 часов для продакшена
-      - KEEP_BACKUPS=30  # Храним 30 бэкапов для продакшена (15 дней)
+      - KEEP_BACKUPS=30  # хранение 30 бэкапов для продакшена (15 дней)
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
       - ./backups/prod:/host-backup:rw
@@ -26,7 +26,7 @@ services:
     networks:
       - vlru-app-prod
     restart: always
-    logging:
+    logging: # на будущее ограничение логов и их конфигурация
       driver: "json-file"
       options:
         max-size: "10m"
