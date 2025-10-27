@@ -29,9 +29,6 @@ export class HealthController {
     return {
       status: redis.status === 'up' ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
-      services: {
-        redis,
-      },
     };
   }
 

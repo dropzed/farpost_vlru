@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BlackoutsMapInfoController } from './blackouts_map_info.controller';
 import { BlackoutsMapInfoService } from './blackouts_map_info.service';
-import { Blackout } from '../blackouts/entities/blackout.entity';
-import { BlackoutBuilding } from '../blackouts/entities/blackout-building.entity';
-import { Building } from '../blackouts/entities/building.entity';
-import { Street } from '../blackouts/entities/street.entity';
-import { City } from '../blackouts/entities/city.entity';
+import { Blackout } from '../entities/blackout.entity';
+import { BlackoutBuilding } from '../entities/blackout-building.entity';
+import { Building } from '../entities/building.entity';
+import { Street } from '../entities/street.entity';
+import { City } from '../entities/city.entity';
 
 @Module({
   imports: [

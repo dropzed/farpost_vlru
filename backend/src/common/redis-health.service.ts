@@ -211,13 +211,7 @@ export class RedisHealthService implements OnModuleInit {
     this.lastAlertTime = now;
     
     this.logger.error(`🚨 ALERT: ${message}`);
-    
-    // Здесь можно добавить отправку уведомлений:
-    // - Email (nodemailer)
-    // - Telegram Bot
-    // - Slack Webhook
-    // - SMS (Twilio)
-    // - PagerDuty
+
     
     // Пример для будущей интеграции:
     await this.sendToMonitoring({

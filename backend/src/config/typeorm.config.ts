@@ -11,7 +11,7 @@ export async function getTypeOrmConfig(configService: ConfigService): Promise<Ty
         username: configService.getOrThrow<string>('POSTGRES_USER'),
         password: configService.getOrThrow<string>('POSTGRES_PASSWORD'),
         database: configService.getOrThrow<string>('POSTGRES_DB'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         migrations: [__dirname + '/../migrations/*{.ts,.js}'],
         migrationsRun: isProduction, // Auto-run migrations in production
         synchronize: !isProduction, // false in production for safety

@@ -12,12 +12,12 @@ export const cacheConfig = (configService: ConfigService): CacheModuleOptions =>
     isGlobal: true,
   };
 
-  console.log('📦 Cache config:', {
-    store: 'memory',
-    ttl: config.ttl,
-    max: config.max,
-    isProduction,
-  });
+  // console.log('📦 Cache config:', {
+  //   store: 'memory',
+  //   ttl: config.ttl,
+  //   max: config.max,
+  //   isProduction,
+  // });
 
   return config;
 };

@@ -4,7 +4,7 @@ FROM postgres:17
 RUN apt-get update && apt-get install -y file && rm -rf /var/lib/apt/lists/*
 
 # копирование SQL дампа для начальной инициализации (custom формат)
-COPY dump-VL_OFF-202510222210.sql /docker-entrypoint-initdb.d/01-init.dump
+COPY dump-VL_OFF-202510280004.sql /docker-entrypoint-initdb.d/01-init.dump
 
 # копирование скрипта бэкапа и восстановления
 COPY scripts/restore.sh /docker-entrypoint-initdb.d/02-restore.sh

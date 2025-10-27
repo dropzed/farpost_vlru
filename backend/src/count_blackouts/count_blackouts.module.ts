@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CountBlackoutsService } from './count_blackouts.service';
 import { CountBlackoutsController } from './count_blackouts.controller';
-import { Blackout } from '../blackouts/entities';
+import { Blackout } from '../entities';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Blackout])],

@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Blackout } from '../blackouts/entities/blackout.entity';
-import { BlackoutBuilding } from '../blackouts/entities/blackout-building.entity';
-import { Building } from '../blackouts/entities/building.entity';
-import { Street } from '../blackouts/entities/street.entity';
-import { City } from '../blackouts/entities/city.entity';
+import { Blackout } from '../entities/blackout.entity';
+import { BlackoutBuilding } from '../entities/blackout-building.entity';
+import { Building } from '../entities/building.entity';
+import { Street } from '../entities/street.entity';
+import { City } from '../entities/city.entity';
 import { December2019BlackoutDto } from './dto';
 
 @Injectable()
