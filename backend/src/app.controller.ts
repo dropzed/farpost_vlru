@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, InternalServerErrorException } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AppService } from './app.service';
 
@@ -20,7 +20,15 @@ export class AppController {
       example: 'Hello World!'
     }
   })
+  @ApiResponse({ 
+    status: 500, 
+    description: 'Внутренняя ошибка сервера' 
+  })
   getHello(): string {
-    return this.appService.getHello();
+    try {
+      return this.appService.getHello();
+    } catch (error) {
+      throw new InternalServerErrorException('Ошибка при проверке работы сервера');
+    }
   }
 }

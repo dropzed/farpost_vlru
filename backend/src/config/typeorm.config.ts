@@ -2,6 +2,8 @@ import {ConfigService} from "@nestjs/config";
 import {TypeOrmModuleOptions} from "@nestjs/typeorm";
 
 export async function getTypeOrmConfig(configService: ConfigService): Promise<TypeOrmModuleOptions> {
+    const isProduction = configService.get('NODE_ENV') === 'production';
+    
     return {
         type: 'postgres',
         host: configService.getOrThrow<string>('POSTGRES_HOST'),
@@ -10,7 +12,10 @@ export async function getTypeOrmConfig(configService: ConfigService): Promise<Ty
         password: configService.getOrThrow<string>('POSTGRES_PASSWORD'),
         database: configService.getOrThrow<string>('POSTGRES_DB'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
+        migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+        migrationsRun: isProduction, // Auto-run migrations in production
+        synchronize: !isProduction, // false in production for safety
         autoLoadEntities: true,
+        logging: isProduction ? ['error', 'warn', 'migration'] : true,
     }
 }

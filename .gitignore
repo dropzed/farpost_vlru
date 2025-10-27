@@ -4,8 +4,9 @@
 backend/dist
 backend/node_modules
 
-# Environment files (keep templates only)
-#.env
+# Environment files - ⚠️ ONLY 2 FILES IN ROOT
+#.env.development
+#.env.production
 #!.env.example
 #*.env.local
 

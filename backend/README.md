@@ -83,6 +83,30 @@ Check out a few resources that may come in handy when working with NestJS:
 - To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
 - Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
 
+## Database Migrations
+
+This project uses TypeORM migrations for production database schema management.
+
+- **Development**: Uses `synchronize: true` for automatic schema updates
+- **Production**: Uses migrations with `migrationsRun: true` for safe deployments
+
+See [MIGRATIONS.md](./MIGRATIONS.md) for detailed migration guide and commands.
+
+Quick commands:
+```bash
+# Generate migration from entity changes
+npm run migration:generate -- src/migrations/MigrationName
+
+# Run migrations
+npm run migration:run
+
+# Revert last migration
+npm run migration:revert
+
+# Show migration status
+npm run migration:show
+```
+
 ## Support
 
 Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
