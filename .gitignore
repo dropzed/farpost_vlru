@@ -16,6 +16,7 @@ musor
 
 # Аналитика
 ruslan/Templates/*.sav
+ruslan/Duration_Baseline_Predictor.joblib
 
 # Backups uncomment this if u want use your backup file
 #backups/
