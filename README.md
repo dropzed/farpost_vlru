@@ -410,7 +410,7 @@ docker compose -f docker-compose.prod.yml down
 
 | Документ | Описание | Ссылка |
 |----------|----------|--------|
-| **Backend Documentation** | API, база данных, миграции, кеширование, мониторинг | [BACKEND_DOCUMENTATION.md](backend/BACKEND_DOCUMENTATION.md) |
+| **Backend Documentation** | API, база данных, миграции, кеширование, мониторинг | [BACKEND_DOCUMENTATION.md](backend_documentaion/BACKEND_DOCUMENTATION.md) |
 | **Backup System** | Автоматизированная система резервного копирования | [backups/README.md](backups/README.md) |
 | **Environment Variables** | Конфигурация окружения (см. комментарии в файлах) | `.env.development`, `.env.production` |
 
