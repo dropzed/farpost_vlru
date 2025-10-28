@@ -1,0 +1,20 @@
+# Игнорируем все бэкапы в папках dev и prod
+dev/backup-*.sql
+dev/latest-backup.sql
+dev/*.tmp
+
+prod/backup-*.sql
+prod/latest-backup.sql
+prod/*.tmp
+
+# Старые бэкапы в корне (для обратной совместимости)
+backup-*.sql
+latest-backup.sql
+*.backup
+*.tmp
+
+# Оставляем начальный дамп и структуру папок
+!dump-VL_OFF-202510222210.sql
+!dev/.gitkeep
+!prod/.gitkeep
+!scripts/

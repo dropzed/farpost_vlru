@@ -1,0 +1,8 @@
+/backend/dist
+/backend/node_modules
+/backend/Dockerfile
+
+backend/BACKEND_DOCUMENTATION.md
+README.md
+
+musor
