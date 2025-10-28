@@ -1,12 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Blackout } from '../entities/blackout.entity';
-import { BlackoutBuilding } from '../entities/blackout-building.entity';
-import { Building } from '../entities/building.entity';
-import { Street } from '../entities/street.entity';
-import { City } from '../entities/city.entity';
-import { December2019BlackoutDto } from './dto';
+import {Inject, Injectable, Logger} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {CACHE_MANAGER} from '@nestjs/cache-manager';
+import type {Cache} from 'cache-manager';
+import {ConfigService} from '@nestjs/config';
+import {Blackout, BlackoutBuilding, Building, City, Street} from '../entities';
+import {December2019BlackoutDto} from './dto';
 
 @Injectable()
 export class BlackoutsMapInfoService {
@@ -23,8 +22,40 @@ export class BlackoutsMapInfoService {
     private streetRepository: Repository<Street>,
     @InjectRepository(City)
     private cityRepository: Repository<City>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private configService: ConfigService,
   ) {}
 
+  /**
+   * Получить данные за декабрь 2019 с кешированием
+   */
+  async getDecember2019BlackoutsWithCache(): Promise<December2019BlackoutDto[]> {
+    const cacheKey = '/blackouts-map-info/december-2019';
+    
+    // Проверка кэша
+    const cached = await this.cacheManager.get<December2019BlackoutDto[]>(cacheKey);
+    
+    if (cached) {
+      this.logger.debug(`✅ Cache HIT for key: ${cacheKey}`);
+      return cached;
+    }
+    
+    this.logger.debug(`❌ Cache MISS for key: ${cacheKey}`);
+    
+    // Получение данных из БД
+    const data = await this.getDecember2019Blackouts();
+    
+    // Сохранение в кэш
+    const ttl = this.configService.get<number>('CACHE_TTL_DECEMBER_2019', 86400) * 1000;
+    await this.cacheManager.set(cacheKey, data, ttl);
+    this.logger.debug(`💾 Saved to cache: ${cacheKey} (TTL: ${ttl}ms)`);
+    
+    return data;
+  }
+
+  /**
+   * Получить данные за декабрь 2019 из БД
+   */
   async getDecember2019Blackouts(): Promise<December2019BlackoutDto[]> {
     this.logger.log('Fetching December 2019 blackouts');
 
@@ -48,20 +79,18 @@ export class BlackoutsMapInfoService {
 
     this.logger.log(`Found ${results.length} blackout records for December 2019`);
 
-    // Формируем результат
-    const blackouts: December2019BlackoutDto[] = results.map((row) => ({
-      latitude: parseFloat(row.latitude) || 0,
-      longitude: parseFloat(row.longitude) || 0,
-      fullAddress: this.buildFullAddress(
-        row.city_name,
-        row.street_name,
-        row.building_number,
-      ),
-      type: row.type,
-      description: row.description || 'Информация отсутствует',
+    // Формирование результата на вывод
+      return results.map((row) => ({
+        latitude: parseFloat(row.latitude) || 0,
+        longitude: parseFloat(row.longitude) || 0,
+        fullAddress: this.buildFullAddress(
+            row.city_name,
+            row.street_name,
+            row.building_number,
+        ),
+        type: row.type,
+        description: row.description || 'Информация отсутствует',
     }));
-
-    return blackouts;
   }
 
   private buildFullAddress(

@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { Blackout } from './blackout.entity';
 
 @Entity('initiators')
 export class Initiator {
@@ -17,4 +18,8 @@ export class Initiator {
   @ApiProperty({ description: 'Email', example: 'contact@energoservice.ru', required: false })
   @Column({ type: 'varchar', length: 255, nullable: true })
   email: string;
+
+  @ApiProperty({ description: 'Аварии инициатора', type: () => [Blackout], required: false })
+  @OneToMany(() => Blackout, (blackout) => blackout.initiator)
+  blackouts: Blackout[];
 }

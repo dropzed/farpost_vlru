@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BlackoutBuilding } from './blackout-building.entity';
+import { Initiator } from './initiator.entity';
 
 @Entity('blackouts')
 export class Blackout {
@@ -28,13 +29,22 @@ export class Blackout {
   @Column({ type: 'varchar', length: 50, nullable: true })
   type: string;
 
-  @ApiProperty({ description: 'Имя инициатора аварии', example: 'ООО Энергосервис', required: false })
-  @Column({ type: 'text', nullable: true, name: 'initiator_name' })
-  initiatorName: string;
-
   @ApiProperty({ description: 'Источник информации об аварии', example: 'https://example.com/news', required: false })
   @Column({ type: 'text', nullable: true })
   source: string;
+
+  @ApiProperty({ description: 'Тип работ', example: 'Плановый ремонт', required: false })
+  @Column({ type: 'varchar', length: 50, nullable: true, name: 'work_type' })
+  workType: string;
+
+  @ApiProperty({ description: 'ID инициатора аварии', example: 1, required: false })
+  @Column({ type: 'int', nullable: true, name: 'initiator_id' })
+  initiatorId: number;
+
+  @ApiProperty({ description: 'Инициатор аварии', type: () => Initiator, required: false })
+  @ManyToOne(() => Initiator)
+  @JoinColumn({ name: 'initiator_id' })
+  initiator: Initiator;
 
   @ApiProperty({ description: 'Связанные здания', type: () => [BlackoutBuilding], required: false })
   @OneToMany(() => BlackoutBuilding, (blackoutBuilding) => blackoutBuilding.blackout)

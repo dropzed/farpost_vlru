@@ -27,8 +27,8 @@ async function bootstrap() {
   const swaggerPath = configService.get('SWAGGER_PATH', 'api');
 
   const config = new DocumentBuilder()
-    .setTitle('Blackouts API')
-    .setDescription('API для управления данными об авариях электро-, водо- и теплоснабжения. Предоставляет информацию о текущих и прошлых авариях, статистику по типам аварий, а также данные о городах, зданиях и инфраструктуре.')
+    .setTitle('VL_RU_BLACKOUTS API')
+    .setDescription('API для управления данными об авариях электро-, водо- и теплоснабжения. Предоставляет информацию о авариях, управляющих компаниях, домах, картам и статистике.')
     .setVersion('1.0')
     .build();
   

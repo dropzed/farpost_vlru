@@ -26,6 +26,7 @@ export class CountBlackoutsService {
       heat: 0,
     };
 
+    // Заполнение результата на основе полученных данных
     counts.forEach((item) => {
       const type = item.type;
       const count = parseInt(item.count, 10);

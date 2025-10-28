@@ -1,11 +1,11 @@
-import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
-import { Blackout } from '../entities/blackout.entity';
-import { BlackoutsMapInfoService } from '../blackouts_map_info/blackouts_map_info.service';
+import {Inject, Injectable, Logger, OnModuleInit} from '@nestjs/common';
+import {CACHE_MANAGER} from '@nestjs/cache-manager';
+import type {Cache} from 'cache-manager';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {ConfigService} from '@nestjs/config';
+import {Blackout} from '../entities';
+import {BlackoutsMapInfoService} from '../blackouts_map_info/blackouts_map_info.service';
 
 /**
  * Сервис для предварительного заполнения кеша (Cache Warming)
@@ -24,39 +24,37 @@ export class CacheWarmingService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Запускаем прогрев кеша при старте приложения
-    this.logger.log('🔥 Starting cache warming...');
+    // Запуск прогрева кеша при старте приложения
+    this.logger.log(' Starting cache warming...');
     await this.warmupCache();
   }
 
-  /**
-   * Прогрев всех критичных эндпоинтов
-   */
+
+  // Прогрев критичных эндпоинтов
   async warmupCache() {
     const startTime = Date.now();
     let successCount = 0;
     let errorCount = 0;
 
     try {
-      // 1. Прогрев статистики по типам
+      // Прогрев статистики по типам
       await this.warmupBlackoutTypes();
       successCount++;
       
-      // 2. Прогрев исторических данных за декабрь 2019
+      // Прогрев исторических данных за декабрь 2019
       await this.warmupDecember2019Data();
       successCount++;
 
       const duration = Date.now() - startTime;
-      this.logger.log(`✅ Cache warming completed! Success: ${successCount}, Errors: ${errorCount}, Duration: ${duration}ms`);
+      this.logger.log(` Cache warming completed! Success: ${successCount}, Errors: ${errorCount}, Duration: ${duration}ms`);
     } catch (error) {
       errorCount++;
-      this.logger.error(`❌ Cache warming failed: ${error.message}`);
+      this.logger.error(` Cache warming failed: ${error.message}`);
     }
   }
 
-  /**
-   * Прогрев кеша статистики по типам
-   */
+
+  // Прогрев кеша статистики по типам
   private async warmupBlackoutTypes() {
     try {
       this.logger.debug('🔥 Warming up blackout types statistics...');
@@ -68,7 +66,7 @@ export class CacheWarmingService implements OnModuleInit {
         .groupBy('blackout.type')
         .getRawMany();
       
-      // Подсчитываем общее количество
+      // Подсчет общего количества отключений
       const total = types.reduce((sum, item) => sum + parseInt(item.count, 10), 0);
       
       const result = {
@@ -79,28 +77,28 @@ export class CacheWarmingService implements OnModuleInit {
       const ttl = this.configService.get<number>('CACHE_TTL_TYPES', 3600) * 1000; // Convert to ms
       await this.cacheManager.set('/count-blackouts/types', result, ttl);
       
-      this.logger.log(`✅ Blackout types cache warmed: ${types.length} types, total: ${total}`);
+      this.logger.log(` Blackout types cache warmed: ${types.length} types, total: ${total}`);
     } catch (error) {
-      this.logger.error(`❌ Failed to warm types cache: ${error.message}`);
+      this.logger.error(` Failed to warm types cache: ${error.message}`);
     }
   }
 
   /**
-   * Прогрев кеша исторических данных за декабрь 2019
+   * Прогрев кеша данных за декабрь 2019
    */
   private async warmupDecember2019Data() {
     try {
-      this.logger.debug('🔥 Warming up December 2019 historical data...');
+      this.logger.debug(' Warming up December 2019 data...');
       
       // Используем сервис для получения данных в правильном формате
       const data = await this.blackoutsMapInfoService.getDecember2019Blackouts();
       
-      const ttl = this.configService.get<number>('CACHE_TTL_DECEMBER_2019', 86400) * 1000; // Convert to ms
+      const ttl = this.configService.get<number>('CACHE_TTL_DECEMBER_2019', 86400) * 1000; // Конвертирование в мс
       await this.cacheManager.set('/blackouts-map-info/december-2019', data, ttl);
       
-      this.logger.log(`✅ December 2019 data cache warmed: ${data.length} records`);
+      this.logger.log(` December 2019 data cache warmed: ${data.length} records`);
     } catch (error) {
-      this.logger.error(`❌ Failed to warm December 2019 cache: ${error.message}`);
+      this.logger.error(` Failed to warm December 2019 cache: ${error.message}`);
     }
   }
 
@@ -109,44 +107,53 @@ export class CacheWarmingService implements OnModuleInit {
    */
   async manualWarmup() {
     this.logger.log('🔥 Manual cache warmup triggered');
-    return await this.warmupCache();
+    await this.warmupCache();
+    return { 
+      success: true, 
+      message: 'Cache warmup initiated' 
+    };
   }
 
   /**
    * Очистка и перезагрузка кеша
    */
   async resetAndWarmup() {
+    const startTime = Date.now();
     this.logger.log('🔄 Resetting cache and warming up...');
     
     try {
-      // Очищаем весь кеш (удаляем все ключи)
-      // Примечание: cache-manager не имеет метода reset()
-      // Поэтому мы просто запускаем прогрев заново
-      this.logger.log('✅ Preparing to warm cache');
+      // Получение store Redis для очистки
+      const redisStore = this.cacheManager.stores as any;
+      let clearedKeys = 0;
       
-      // Прогреваем заново
+      // Очистка кеша
+      if (redisStore && typeof redisStore.reset === 'function') {
+        await redisStore.reset();
+        clearedKeys = -1; // Все ключи очищены
+        this.logger.log('✅ Cache cleared successfully');
+      } else {
+        this.logger.log('⚠️ Cache store does not support reset, warming cache directly');
+      }
+      
+      // Прогрев данных заново
       await this.warmupCache();
       
-      return { success: true, message: 'Cache warmed successfully' };
+      const duration = ((Date.now() - startTime) / 1000).toFixed(3);
+      
+      return { 
+        success: true, 
+        message: 'Cache reset and warmup completed',
+        clearedKeys: clearedKeys === -1 ? 'all' : clearedKeys,
+        warmedKeys: 2, // types + december2019
+        duration: `${duration}s`
+      };
     } catch (error) {
-      this.logger.error(`❌ Failed to warm cache: ${error.message}`);
-      return { success: false, message: error.message };
-    }
-  }
-
-  /**
-   * Прогрев конкретного кеша по ключу
-   */
-  async warmupSpecific(key: string) {
-    this.logger.log(`🔥 Warming up specific cache: ${key}`);
-    
-    switch (key) {
-      case 'types':
-        return await this.warmupBlackoutTypes();
-      case 'december2019':
-        return await this.warmupDecember2019Data();
-      default:
-        this.logger.warn(`Unknown cache key: ${key}`);
+      this.logger.error(`❌ Failed to reset and warm cache: ${error.message}`);
+      return { 
+        success: false, 
+        message: 'Failed to reset cache',
+        error: error.message 
+      };
     }
   }
 }

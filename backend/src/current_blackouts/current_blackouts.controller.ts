@@ -1,7 +1,7 @@
-import { Controller, Get, Param, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentBlackoutsService } from './current_blackouts.service';
-import { CurrentBlackoutResponseDto } from './dto/current-blackout-response.dto';
+import { CurrentBlackoutResponseDto } from './dto';
 
 @ApiTags('current-blackouts')
 @Controller('current-blackouts')
@@ -29,12 +29,6 @@ export class CurrentBlackoutsController {
     description: 'Некорректный формат даты' 
   })
   async getBlackoutsByDate(@Param('date') dateStr: string): Promise<CurrentBlackoutResponseDto[]> {
-    const date = new Date(dateStr);
-
-    if (isNaN(date.getTime())) {
-      throw new BadRequestException('Некорректный формат даты. Используйте формат YYYY-MM-DD');
-    }
-
-    return this.currentBlackoutsService.getBlackoutsByDate(date);
+    return this.currentBlackoutsService.getBlackoutsByDateString(dateStr);
   }
 }

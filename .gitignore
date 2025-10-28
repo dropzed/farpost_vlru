@@ -4,30 +4,20 @@
 backend/dist
 backend/node_modules
 
-# Environment files - ⚠️ ONLY 2 FILES IN ROOT
+
+# Environment files - uncomment if you want to ignore them for security (now they are tracked for example purposes)
 #.env.development
 #.env.production
 #!.env.example
 #*.env.local
 
-# Docker
-docker-compose.override.yml
-
-# Logs
-logs
-*.log
-npm-debug.log*
-
-# OS
-.DS_Store
-Thumbs.db
 
 musor
 
 # Аналитика
 ruslan/Templates/*.sav
 
-# Backups
+# Backups uncomment this if u want use your backup file
 #backups/
 #*.sql
 #*.sql.gz

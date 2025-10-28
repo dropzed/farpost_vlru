@@ -7,5 +7,4 @@ export { Building } from './building.entity';
 export { Blackout } from './blackout.entity';
 export { BlackoutBuilding } from './blackout-building.entity';
 export { Complaint } from './complaint.entity';
-export { ComplaintInMinute } from './complaint-in-minute.entity';
 export { Initiator } from './initiator.entity';

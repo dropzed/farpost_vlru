@@ -6,7 +6,6 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "generate:entities": "npx typeorm-model-generator -h ${TYPEORM_GEN_HOST:-localhost} -d ${TYPEORM_GEN_DATABASE:-user} -u ${TYPEORM_GEN_USER:-user} -x ${TYPEORM_GEN_PASSWORD:-user123456} -p ${TYPEORM_GEN_PORT:-5432} -e postgres -o ./src/entities -s public --ssl false",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/typeorm-cli.config.ts",
     "migration:create": "typeorm-ts-node-commonjs migration:create",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/typeorm-cli.config.ts",
@@ -66,7 +65,6 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typeorm-model-generator": "^0.4.6",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },

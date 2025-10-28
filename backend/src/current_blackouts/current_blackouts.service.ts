@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
-import { Blackout } from '../entities';
-import { CurrentBlackoutResponseDto } from './dto/current-blackout-response.dto';
+import {BadRequestException, Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {Blackout} from '../entities';
+import {CurrentBlackoutResponseDto} from './dto';
 
 @Injectable()
 export class CurrentBlackoutsService {
@@ -11,6 +11,22 @@ export class CurrentBlackoutsService {
     private readonly blackoutsRepo: Repository<Blackout>,
   ) {}
 
+  /**
+   * Получения отключения по строке даты (и проверка на валидность)
+   */
+  async getBlackoutsByDateString(dateStr: string): Promise<CurrentBlackoutResponseDto[]> {
+    const date = new Date(dateStr);
+
+    if (isNaN(date.getTime())) {
+      throw new BadRequestException('Некорректный формат даты. Используйте формат YYYY-MM-DD');
+    }
+
+    return this.getBlackoutsByDate(date);
+  }
+
+  /**
+   * Получить отключения по объекту Date (получение даты и отправка в маппер)
+   */
   async getBlackoutsByDate(date: Date): Promise<CurrentBlackoutResponseDto[]> {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
@@ -31,6 +47,7 @@ export class CurrentBlackoutsService {
     return this.mapBlackoutsToDto(blackouts);
   }
 
+  // Маппинг сущностей Blackout в DTO для ответа
   private mapBlackoutsToDto(blackouts: Blackout[]): CurrentBlackoutResponseDto[] {
     const results: CurrentBlackoutResponseDto[] = [];
 

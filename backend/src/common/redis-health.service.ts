@@ -19,7 +19,7 @@ export class RedisHealthService implements OnModuleInit {
 
   async onModuleInit() {
     await this.initializeRedisClient();
-    this.logger.log('🔍 Redis Health Check initialized');
+    this.logger.log(' Redis Health Check initialized');
   }
 
   private async initializeRedisClient() {
@@ -34,8 +34,8 @@ export class RedisHealthService implements OnModuleInit {
     try {
       const maxRetryTime = this.configService.get<number>('REDIS_HEALTH_MAX_RETRY_TIME', 3600000);
       const retryDelay = this.configService.get<number>('REDIS_HEALTH_RETRY_DELAY', 3000);
-      
-      // Redis v3 syntax
+
+      // Инициализация Redis клиента с настройками повторного подключения
       this.redisClient = redis.createClient({
         host,
         port: Number(port),
@@ -77,7 +77,7 @@ export class RedisHealthService implements OnModuleInit {
   @Cron(CronExpression.EVERY_30_SECONDS)
   async checkRedisHealth() {
     try {
-      // Если клиент не инициализирован или не подключен, пробуем подключиться
+      // Если клиент не инициализирован или не подключен, попытка подключения
       if (!this.redisClient || !this.redisClient.connected) {
         this.logger.debug('Redis client not connected, attempting to reconnect...');
         await this.initializeRedisClient();
@@ -87,37 +87,36 @@ export class RedisHealthService implements OnModuleInit {
         }
       }
 
-      // Проверка PING (callback style для redis v3)
+      // Проверка PING (callback версия для совместимости)
       this.redisClient.ping((err, result) => {
         if (err || result !== 'PONG') {
           this.consecutiveFailures++;
           this.logger.warn(`⚠️ Redis PING failed (${this.consecutiveFailures})`);
           
           if (this.consecutiveFailures >= this.MAX_FAILURES) {
-            this.sendAlert(`Redis is DOWN! ${this.consecutiveFailures} consecutive failures detected.`);
+            this.logAlert(`Redis is DOWN! ${this.consecutiveFailures} consecutive failures detected.`);
           }
         } else {
-          // Redis работает нормально
           if (this.consecutiveFailures > 0) {
             this.logger.log('✅ Redis recovered!');
-            this.sendRecoveryAlert();
+            this.logRecovery();
           }
           this.consecutiveFailures = 0;
           
-          // Получаем метрики Redis
+          // Получение метрик Redis
           this.logRedisMetrics();
         }
       });
     } catch (error) {
       this.consecutiveFailures++;
       
-      // Логируем только каждую 3-ю ошибку, чтобы не спамить
+      // Логирование только каждой 3 ошибки, иначе невозможно читать логи
       if (this.consecutiveFailures % 3 === 0) {
         this.logger.warn(`⚠️ Redis health check failed (${this.consecutiveFailures}): ${error.message}`);
       }
 
       if (this.consecutiveFailures >= this.MAX_FAILURES) {
-        await this.sendAlert(`Redis is DOWN! ${this.consecutiveFailures} consecutive failures detected.`);
+        this.logAlert(`Redis is DOWN! ${this.consecutiveFailures} consecutive failures detected.`);
       }
     }
   }
@@ -144,7 +143,7 @@ export class RedisHealthService implements OnModuleInit {
           const usagePercent = (memoryUsagePercent / maxMemoryBytes) * 100;
 
           if (usagePercent > 90) {
-            this.sendAlert(`⚠️ Redis memory usage is HIGH: ${usagePercent.toFixed(2)}% (${usedMemory} / ${maxMemory})`);
+            this.logAlert(`⚠️ Redis memory usage is HIGH: ${usagePercent.toFixed(2)}% (${usedMemory} / ${maxMemory})`);
           } else if (usagePercent > 80) {
             this.logger.warn(`⚠️ Redis memory usage: ${usagePercent.toFixed(2)}% (${usedMemory} / ${maxMemory})`);
           }
@@ -176,9 +175,9 @@ export class RedisHealthService implements OnModuleInit {
           const totalMisses = parseInt(misses);
           const total = totalHits + totalMisses;
           
-          // Проверяем что есть хоть какая-то активность
+          // Проверка, что есть хоть какая-то активность
           if (total === 0) {
-            // Нет активности, не логируем
+            // Нет активности, не логируются метрики
             return;
           }
           
@@ -192,15 +191,15 @@ export class RedisHealthService implements OnModuleInit {
         }
       });
     } catch (error) {
-      // Не логируем ошибки если Redis не используется
+      // Не логируются ошибки если Redis не используется
       return;
     }
   }
 
   /**
-   * Отправка алерта
+   * Логирование алерта
    */
-  private async sendAlert(message: string) {
+  private logAlert(message: string) {
     const now = Date.now();
     
     // Защита от спама алертами (cooldown 5 минут)
@@ -209,55 +208,14 @@ export class RedisHealthService implements OnModuleInit {
     }
 
     this.lastAlertTime = now;
-    
     this.logger.error(`🚨 ALERT: ${message}`);
-
-    
-    // Пример для будущей интеграции:
-    await this.sendToMonitoring({
-      severity: 'critical',
-      service: 'Redis',
-      message,
-      timestamp: new Date().toISOString(),
-    });
   }
 
   /**
-   * Уведомление о восстановлении
+   * Логирование восстановления
    */
-  private sendRecoveryAlert() {
+  private logRecovery() {
     this.logger.log('✅ RECOVERY: Redis is back online');
-    
-    // Отправка уведомления о восстановлении
-    this.sendToMonitoring({
-      severity: 'info',
-      service: 'Redis',
-      message: 'Redis connection recovered',
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  /**
-   * Отправка в систему мониторинга (заглушка для будущей интеграции)
-   */
-  private async sendToMonitoring(data: any) {
-    // TODO: Интеграция с системой мониторинга
-    // Например: Prometheus, Grafana, ELK Stack, Sentry
-    
-    const webhookUrl = this.configService.get('MONITORING_WEBHOOK_URL');
-    
-    if (webhookUrl) {
-      try {
-        // await fetch(webhookUrl, {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(data),
-        // });
-        this.logger.debug('Alert sent to monitoring system');
-      } catch (error) {
-        this.logger.error(`Failed to send to monitoring: ${error.message}`);
-      }
-    }
   }
 
   /**
@@ -275,7 +233,12 @@ export class RedisHealthService implements OnModuleInit {
   async getHealthStatus() {
     try {
       if (!this.redisClient || !this.redisClient.connected) {
-        return { status: 'down', message: 'Redis client not connected' };
+        return { 
+          status: 'down', 
+          message: 'Redis client not connected',
+          consecutiveFailures: this.consecutiveFailures,
+          lastCheck: new Date().toISOString(),
+        };
       }
 
       return new Promise((resolve) => {
@@ -285,10 +248,12 @@ export class RedisHealthService implements OnModuleInit {
               status: 'down',
               message: err.message,
               consecutiveFailures: this.consecutiveFailures,
+              lastCheck: new Date().toISOString(),
             });
           } else {
             resolve({
               status: 'up',
+              message: 'Redis is healthy',
               consecutiveFailures: this.consecutiveFailures,
               lastCheck: new Date().toISOString(),
             });
@@ -300,7 +265,20 @@ export class RedisHealthService implements OnModuleInit {
         status: 'down',
         message: error.message,
         consecutiveFailures: this.consecutiveFailures,
+        lastCheck: new Date().toISOString(),
       };
     }
+  }
+
+  /**
+   * Получение общего статуса здоровья системы
+   */
+  async getOverallHealthStatus() {
+    const redisStatus: any = await this.getHealthStatus();
+    
+    return {
+      status: redisStatus.status === 'up' ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+    };
   }
 }
