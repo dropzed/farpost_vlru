@@ -1,0 +1,109 @@
+services:
+  db-postgres:
+    container_name: db-postgres-prod
+    build:
+      context: ./backups
+      dockerfile: Dockerfile
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env.production
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./backups/prod:/host-backup:rw
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 30s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    networks:
+      - vlru-app-prod
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    container_name: redis-prod
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    env_file:
+      - .env.production
+    command: sh -c 'redis-server --appendonly yes --requirepass "$${REDIS_PASSWORD}" --maxmemory 2gb --maxmemory-policy allkeys-lru --save 900 1 --save 300 10 --save 60 10000'
+    volumes:
+      - redis_data_prod:/data
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli --no-auth-warning -a \"$${REDIS_PASSWORD}\" ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - vlru-app-prod
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    container_name: backend-nest-prod
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vlru-app-prod
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    container_name: frontend-prod
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+    - "8080:8080"
+    env_file:
+    - .env.production
+    environment:
+    - NODE_ENV=production
+    - VITE_API_URL=http://localhost:3000
+    - PORT=8080
+    networks:
+    - vlru-app-prod
+    restart: always
+    depends_on:
+    - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data_prod:
+  redis_data_prod:
+
+networks:
+  vlru-app-prod:
+    driver: bridge
+    name: app-vlru-net-prod

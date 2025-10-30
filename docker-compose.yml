@@ -1,21 +1,18 @@
-
 services:
   db-postgres:
     container_name: db-postgres
-    image: postgres:17
+    build:
+      context: ./backups
+      dockerfile: Dockerfile
     ports:
       - "5432:5432"
-#    env_file:
-#      - path: backend/.env
-    environment:
-      DB_USER: user
-      POSTGRES_PASSWORD: user
-      DB_NAME: user
-      DB_HOST: db
+    env_file:
+      - .env.development
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backups/dev:/host-backup:rw
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       retries: 5
       start_period: 5s
@@ -23,22 +20,76 @@ services:
       - vlru-app
     restart: always
 
+  redis:
+    container_name: redis-dev
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    env_file:
+      - .env.development
+    command: sh -c "redis-server --appendonly yes --maxmemory $${REDIS_MAXMEMORY} --maxmemory-policy allkeys-lru"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - vlru-app
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   backend:
     container_name: backend-nest
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
     ports:
       - "3000:3000"
     env_file:
-      - path: backend/.env
+      - .env.development
+    volumes:
+      - ./backend/src:/app/src:ro
     depends_on:
-      - db-postgres
+      db-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - vlru-app
+    restart: unless-stopped
+
+  frontend:
+    container_name: frontend-dev
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.development
+    volumes:
+      - ./frontend:/app:rw
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - vlru-app
+    restart: unless-stopped
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   vlru-app:

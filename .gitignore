@@ -1,4 +1,24 @@
 .idea
 
-./backend/dist
-./backend/node_modules
+# Backend
+backend/dist
+backend/node_modules
+
+
+# Environment files - uncomment if you want to ignore them for security (now they are tracked for example purposes)
+#.env.development
+#.env.production
+#!.env.example
+#*.env.local
+
+
+musor
+
+# Аналитика
+ruslan/Templates/*.sav
+ruslan/Duration_Baseline_Predictor.joblib
+
+# Backups uncomment this if u want use your backup file
+#backups/
+#*.sql
+#*.sql.gz
