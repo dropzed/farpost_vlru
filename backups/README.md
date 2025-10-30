@@ -7,18 +7,22 @@
 ## Функционал
 
 ### При запуске контейнера:
-1. Проверяется наличие существующих бэкапов в папке `backups/`
-2. Если найден бэкап - восстанавливается последний
-3. Если бэкапов нет - инициализируется из файла `dump-VL_OFF-202510280004.sql` (или указанного вами)
+
+1. ОБЯЗАТЕЛЬНО ПРОВЕРЬТЕ LINE SEPARATION для sh скриптов! LF - Unix, MacOS; CRLF- Windows
+2. Проверяется наличие существующих бэкапов в папке `backups/`
+3. Если найден бэкап - восстанавливается последний
+4. Если бэкапов нет - инициализируется из файла `dump-VL_OFF-202510280004.sql` (или указанного вами)
 
 ### Автоматическое создание бэкапов:
 
 **Разработка (docker-compose.yml):**
+
 - Интервал: каждые 10 минут (600 секунд)
 - Хранится: 20 последних бэкапов
 - Формат файла: `backup-YYYYMMDD_HHMMSS.sql`
 
 **Продакшен (docker-compose.prod.yml):**
+
 - Интервал: каждые 12 часов (43200 секунд)
 - Хранится: 30 последних бэкапов (≈15 дней истории)
 - Формат файла: `backup-YYYYMMDD_HHMMSS.sql`
@@ -47,8 +51,8 @@ backups/
 
 Система использует **PostgreSQL custom format** (`pg_dump -Fc`) для всех бэкапов
 
-
 ### Ручное создание бэкапа:
+
 ```bash
 # Для разработки
 docker exec db-postgres pg_dump -U $POSTGRES_USER -d $POSTGRES_DB -Fc > backups/dev/manual-backup-$(date +%Y%m%d_%H%M%S).sql
@@ -58,6 +62,7 @@ docker exec db-postgres-prod pg_dump -U $POSTGRES_USER -d $POSTGRES_DB -Fc > bac
 ```
 
 ### Восстановление из конкретного бэкапа:
+
 ```bash
 # Для разработки
 docker exec -i db-postgres pg_restore -U $POSTGRES_USER -d $POSTGRES_DB --clean --if-exists /host-backup/backup-YYYYMMDD_HHMMSS.sql

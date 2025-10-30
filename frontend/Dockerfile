@@ -10,7 +10,7 @@ RUN pnpm install
 
 COPY . .
 
-RUN pnpm run build
+RUN pnpm run build:client && pnpm run build:server
 
 FROM node:20-alpine AS production
 
@@ -19,11 +19,10 @@ RUN npm install -g pnpm
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --production
+RUN pnpm install --prod=false
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/server ./server
 
-EXPOSE 8081
+EXPOSE 8080
 
-CMD ["pnpm", "run", "dev"]
+CMD ["node", "dist/server/node-build.mjs"]

@@ -76,27 +76,28 @@ services:
         max-file: "3"
 
   frontend:
-  container_name: frontend-prod
-  build:
-    context: ./frontend
-    dockerfile: Dockerfile
-  ports:
+    container_name: frontend-prod
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
     - "8080:8080"
-  env_file:
+    env_file:
     - .env.production
-  environment:
+    environment:
     - NODE_ENV=production
-    - VITE_API_URL=http://backend:3000
-  networks:
+    - VITE_API_URL=http://localhost:3000
+    - PORT=8080
+    networks:
     - vlru-app-prod
-  restart: always
-  depends_on:
+    restart: always
+    depends_on:
     - backend
-  logging:
-    driver: "json-file"
-    options:
-      max-size: "10m"
-      max-file: "3"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data_prod:
