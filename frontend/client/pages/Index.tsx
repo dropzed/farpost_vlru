@@ -1,5 +1,5 @@
 import Layout from "@/components/Layout";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface BlackoutStats {
   electricity: number;
@@ -13,13 +13,83 @@ interface StatItem {
   value: string;
   subtitle: string;
   icon: "electricity" | "water" | "cold-water" | "heating";
-  color: "red" | "orange" | "gray";
+  color: "red" | "orange" | "blue" | "gray";
+}
+
+interface ChartDataItem {
+  day: number;
+  value: number;
+  date: string;
+}
+
+interface ChartData {
+  electricity: ChartDataItem[];
+  hot_water: ChartDataItem[];
+  cold_water: ChartDataItem[];
+  heat: ChartDataItem[];
+}
+
+interface TooltipData {
+  visible: boolean;
+  x: number;
+  y: number;
+  data: ChartDataItem;
+  type: string;
 }
 
 export default function Index() {
   const [stats, setStats] = useState<StatItem[]>([]);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Mock данные для графика
+  const generateMockChartData = (): ChartData => {
+    const today = new Date();
+    const data: ChartData = {
+      electricity: [],
+      hot_water: [],
+      cold_water: [],
+      heat: []
+    };
+
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateString = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+
+      data.electricity.push({
+        day: 30 - i,
+        value: Math.floor(Math.random() * 25),
+        date: dateString
+      });
+
+      data.hot_water.push({
+        day: 30 - i,
+        value: Math.floor(Math.random() * 20),
+        date: dateString
+      });
+
+      data.cold_water.push({
+        day: 30 - i,
+        value: Math.floor(Math.random() * 15),
+        date: dateString
+      });
+
+      data.heat.push({
+        day: 30 - i,
+        value: Math.floor(Math.random() * 5),
+        date: dateString
+      });
+    }
+
+    return data;
+  };
 
   const fetchBlackoutStats = async () => {
     try {
@@ -28,7 +98,6 @@ export default function Index() {
       
       console.log('Начинаем запрос к API...');
       
-      // Пробуем разные варианты URL для отладки
       const apiUrls = [
         '/count-blackouts/types',
         'http://localhost:3000/count-blackouts/types',
@@ -75,21 +144,24 @@ export default function Index() {
                 value: data.cold_water.toLocaleString(),
                 subtitle: data.cold_water === 0 ? "у всех есть" : "аварий",
                 icon: "cold-water",
-                color: data.cold_water > 0 ? "orange" : "gray",
+                color: data.cold_water > 0 ? "blue" : "gray",
               },
               {
                 title: "Отопление",
                 value: data.heat.toLocaleString(),
                 subtitle: data.heat === 0 ? "Включается" : "аварий",
                 icon: "heating",
-                color: data.heat > 0 ? "orange" : "gray",
+                color: data.heat > 0 ? "gray" : "gray",
               },
             ];
             
             setStats(transformedStats);
+            
+            const mockChartData = generateMockChartData();
+            setChartData(mockChartData);
+            
             return;
           } else {
-            // Пробуем получить текст ошибки
             const errorText = await response.text();
             console.error(`Ошибка ${response.status} для ${url}:`, errorText);
             lastError = new Error(`HTTP ${response.status}: ${errorText}`);
@@ -106,7 +178,6 @@ export default function Index() {
       console.error('Финальная ошибка при загрузке данных:', err);
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
       
-      // Fallback данные
       setStats([
         {
           title: "Нет электричества",
@@ -127,7 +198,7 @@ export default function Index() {
           value: "0",
           subtitle: "у всех есть",
           icon: "cold-water",
-          color: "gray",
+          color: "blue",
         },
         {
           title: "Отопление",
@@ -137,6 +208,9 @@ export default function Index() {
           color: "gray",
         },
       ]);
+
+      const mockChartData = generateMockChartData();
+      setChartData(mockChartData);
     } finally {
       setLoading(false);
     }
@@ -146,20 +220,65 @@ export default function Index() {
     fetchBlackoutStats();
   }, []);
 
-  const electricityData = Array.from({ length: 30 }, (_, i) => ({
-    day: i + 1,
-    value: Math.random() * 64,
-  }));
+  useEffect(() => {
+    const handleScroll = () => {
+      setTooltip(null);
+    };
 
-  const waterData = Array.from({ length: 30 }, (_, i) => ({
-    day: i + 1,
-    value: Math.random() * 63,
-  }));
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, []);
+
+  const handleBarHover = (event: React.MouseEvent, data: ChartDataItem, type: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const chartRect = chartContainerRef.current?.getBoundingClientRect();
+    
+    const x = rect.left + rect.width / 2;
+    const y = rect.top - 10;
+
+    setTooltip({
+      visible: true,
+      x,
+      y,
+      data,
+      type
+    });
+  };
+
+  const handleBarLeave = () => {
+    // исправление моргания подсказки
+    hoverTimeoutRef.current = setTimeout(() => {
+      setTooltip(null);
+    }, 100);
+  };
+
+  const handleTooltipEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+  };
+
+  const handleTooltipLeave = () => {
+    setTooltip(null);
+  };
+
+  // Функции для расчета общего количества аварий
+  const getTotalOutages = (data: ChartDataItem[]) => {
+    return data.reduce((sum, item) => sum + item.value, 0);
+  };
 
   return (
     <Layout>
       <div className="max-w-[1368px] mx-auto px-4 lg:px-0 py-8 space-y-8">
-        <div className="rounded-xl border border-orange-primary/20 bg-orange-light/10  shadow-sm p-6">
+        {/* Рекламный баннер */}
+        <div className="rounded-xl border border-orange-primary/20 bg-orange-light/10 shadow-sm p-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-xl bg-white flex items-center justify-center">
@@ -192,7 +311,6 @@ export default function Index() {
           </p>
         </div>
 
-        {/* Состояние загрузки */}
         {loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
@@ -241,10 +359,12 @@ export default function Index() {
                 key={i}
                 className={`rounded-xl border shadow-sm p-6 bg-white ${
                   stat.color === "red"
-                    ? "border-l-4 border-l-red-alert border-t border-r border-b border-red-alert"
+                    ? "border-l-4 border-l-red-alert"
                     : stat.color === "orange"
-                    ? "border-l-4 border-l-orange-primary border-t border-r border-b border-orange-primary"
-                    : "border-l-4 border-l-gray-bg border-t border-r border-b border-gray-bg"
+                    ? "border-l-4 border-l-orange-primary"
+                    : stat.color === "blue"
+                    ? "border-l-4 border-l-blue-500"
+                    : "border-l-4 border-l-gray-bg"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -270,8 +390,8 @@ export default function Index() {
                     )}
                     {stat.icon === "cold-water" && (
                       <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                        <path d="M11.667 27.167C15.333 27.167 18.333 24.117 18.333 20.417C18.333 18.483 17.383 16.65 15.483 15.1C13.583 13.55 12.15 11.25 11.667 8.833C11.183 11.25 9.767 13.567 7.85 15.1C5.933 16.633 5 18.5 5 20.417C5 24.117 8 27.167 11.667 27.167Z" stroke="#6B7280" strokeWidth="3.33" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M20.933 11C22.08 9.168 22.892 7.148 23.333 5.033C24.167 9.2 26.667 13.2 30 15.867C33.333 18.533 35 21.7 35 25.033C35.01 27.337 34.335 29.592 33.061 31.512C31.788 33.432 29.973 34.93 27.847 35.817C25.721 36.705 23.379 36.941 21.119 36.495C18.858 36.05 16.781 34.944 15.15 33.317" stroke="#6B7280" strokeWidth="3.33" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M11.667 27.167C15.333 27.167 18.333 24.117 18.333 20.417C18.333 18.483 17.383 16.65 15.483 15.1C13.583 13.55 12.15 11.25 11.667 8.833C11.183 11.25 9.767 13.567 7.85 15.1C5.933 16.633 5 18.5 5 20.417C5 24.117 8 27.167 11.667 27.167Z" stroke="#3B82F6" strokeWidth="3.33" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M20.933 11C22.08 9.168 22.892 7.148 23.333 5.033C24.167 9.2 26.667 13.2 30 15.867C33.333 18.533 35 21.7 35 25.033C35.01 27.337 34.335 29.592 33.061 31.512C31.788 33.432 29.973 34.93 27.847 35.817C25.721 36.705 23.379 36.941 21.119 36.495C18.858 36.05 16.781 34.944 15.15 33.317" stroke="#3B82F6" strokeWidth="3.33" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     )}
                     {stat.icon === "heating" && (
@@ -286,79 +406,113 @@ export default function Index() {
           </div>
         )}
 
-        {/* Остальная часть кода с графиками остается без изменений */}
-        <div className="rounded-xl border border-gray-border bg-white shadow-sm p-8 space-y-6">
-          <h2 className="text-xl font-semibold text-dark-text">
-            График отключений за 30 дней
-          </h2>
+        {/* Графики */}
+        {chartData && (
+          <div 
+            ref={chartContainerRef}
+            className="rounded-xl border border-gray-border bg-white shadow-sm p-8 space-y-6"
+          >
+            <h2 className="text-xl font-semibold text-dark-text">
+              График отключений за 30 дней
+            </h2>
 
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-dark-text">Электричество</span>
-                <span className="text-gray-text">24 аварии</span>
+            {/* Подсказка */}
+            {tooltip && (
+              <div 
+                ref={tooltipRef}
+                className="fixed z-50 px-3 py-2 text-sm bg-gray-800 text-white rounded-lg shadow-lg pointer-events-none"
+                style={{
+                  left: `${tooltip.x}px`,
+                  top: `${tooltip.y - 40}px`,
+                  transform: 'translateX(-50%)'
+                }}
+                onMouseEnter={handleTooltipEnter}
+                onMouseLeave={handleTooltipLeave}
+              >
+                <div className="font-medium">{tooltip.data.date}</div>
+                <div>{tooltip.data.value} отключений</div>
               </div>
-              <div className="flex items-end justify-center gap-1 h-16">
-                {electricityData.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-red-alert/20 rounded-t"
-                    style={{ height: `${item.value}px` }}
-                  />
-                ))}
-              </div>
-            </div>
+            )}
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-dark-text">Горячая вода</span>
-                <span className="text-gray-text">156 аварий</span>
+            <div className="space-y-6">
+              {/* Электричество */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-dark-text">Электричество</span>
+                  <span className="text-gray-text">{getTotalOutages(chartData.electricity)} аварий</span>
+                </div>
+                <div className="flex items-end justify-center gap-1 h-16 relative">
+                  {chartData.electricity.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 bg-red-alert/20 rounded-t hover:bg-red-alert/40 transition-colors cursor-pointer relative group"
+                      style={{ height: `${Math.max(item.value * 3, 3)}px` }}
+                      onMouseEnter={(e) => handleBarHover(e, item, "electricity")}
+                      onMouseLeave={handleBarLeave}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="flex items-end justify-center gap-1 h-16">
-                {waterData.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-orange-primary/20 rounded-t"
-                    style={{ height: `${item.value}px` }}
-                  />
-                ))}
-              </div>
-              
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-dark-text">Холодная вода</span>
-                <span className="text-gray-text">16 аварий</span>
-              </div>
-              <div className="flex items-end justify-center gap-1 h-16">
-                {waterData.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-blue-300/60 rounded-t"
-                    style={{ height: `${item.value}px` }}
-                  />
-                ))}
-              </div>
-              
-            </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-dark-text">Отопление</span>
-                <span className="text-gray-text">0 аварий</span>
+              {/* Горячая вода */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-dark-text">Горячая вода</span>
+                  <span className="text-gray-text">{getTotalOutages(chartData.hot_water)} аварий</span>
+                </div>
+                <div className="flex items-end justify-center gap-1 h-16">
+                  {chartData.hot_water.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 bg-orange-primary/20 rounded-t hover:bg-orange-primary/40 transition-colors cursor-pointer"
+                      style={{ height: `${Math.max(item.value * 3, 3)}px` }}
+                      onMouseEnter={(e) => handleBarHover(e, item, "hot_water")}
+                      onMouseLeave={handleBarLeave}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="flex items-end justify-center gap-1 h-16">
-                {Array.from({ length: 30 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-gray-bg rounded-t"
-                    style={{ height: "3px" }}
-                  />
-                ))}
+
+              {/* Холодная вода */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-dark-text">Холодная вода</span>
+                  <span className="text-gray-text">{getTotalOutages(chartData.cold_water)} аварий</span>
+                </div>
+                <div className="flex items-end justify-center gap-1 h-16">
+                  {chartData.cold_water.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 bg-blue-500/20 rounded-t hover:bg-blue-500/40 transition-colors cursor-pointer"
+                      style={{ height: `${Math.max(item.value * 3, 3)}px` }}
+                      onMouseEnter={(e) => handleBarHover(e, item, "cold_water")}
+                      onMouseLeave={handleBarLeave}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Отопление */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-dark-text">Отопление</span>
+                  <span className="text-gray-text">{getTotalOutages(chartData.heat)} аварий</span>
+                </div>
+                <div className="flex items-end justify-center gap-1 h-16">
+                  {chartData.heat.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 bg-gray-bg rounded-t hover:bg-gray-400 transition-colors cursor-pointer"
+                      style={{ height: `${Math.max(item.value * 3, 3)}px` }}
+                      onMouseEnter={(e) => handleBarHover(e, item, "heat")}
+                      onMouseLeave={handleBarLeave}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </Layout>
   );

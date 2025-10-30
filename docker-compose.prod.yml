@@ -86,7 +86,7 @@ services:
     - .env.production
   environment:
     - NODE_ENV=production
-    - VITE_API_URL=http://backend:3000  # В Docker сети используем имя сервиса
+    - VITE_API_URL=http://backend:3000
   networks:
     - vlru-app-prod
   restart: always
